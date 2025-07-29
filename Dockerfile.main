@@ -1,0 +1,66 @@
+# Dockerfile.main - Uses the dependencies image and builds the application
+ARG DEPENDENCIES_IMAGE=10.212.132.157/dev-jute/jutesmart-deps:1.0.0
+FROM ${DEPENDENCIES_IMAGE} AS builder
+
+# Copy resource files if they exist (optional)
+# If you have custom nginx configs, uncomment and adjust these lines:
+# COPY resources/nginx-template.conf /templates/nginx/frappe.conf.template
+# COPY resources/nginx-entrypoint.sh /usr/local/bin/nginx-entrypoint.sh
+
+# apps.json includes
+ARG APPS_JSON_BASE64
+RUN if [ -n "${APPS_JSON_BASE64}" ]; then \
+    mkdir /opt/frappe && echo "${APPS_JSON_BASE64}" | base64 -d > /opt/frappe/apps.json; \
+  fi
+
+USER frappe
+
+ARG FRAPPE_BRANCH=version-15
+ARG FRAPPE_PATH=https://github.com/frappe/frappe
+RUN export APP_INSTALL_ARGS="" && \
+  if [ -n "${APPS_JSON_BASE64}" ]; then \
+    export APP_INSTALL_ARGS="--apps_path=/opt/frappe/apps.json"; \
+  fi && \
+  bench init ${APP_INSTALL_ARGS}\
+    --frappe-branch=${FRAPPE_BRANCH} \
+    --frappe-path=${FRAPPE_PATH} \
+    --no-procfile \
+    --no-backups \
+    --skip-redis-config-generation \
+    --verbose \
+    /home/frappe/frappe-bench && \
+  cd /home/frappe/frappe-bench && \
+  echo "{}" > sites/common_site_config.json && \
+  find apps -mindepth 1 -path "*/.git" | xargs rm -fr
+
+FROM ${DEPENDENCIES_IMAGE} AS backend
+
+# Copy resource files if they exist (optional)
+# If you have custom nginx configs, uncomment and adjust these lines:
+# COPY resources/nginx-template.conf /templates/nginx/frappe.conf.template
+# COPY resources/nginx-entrypoint.sh /usr/local/bin/nginx-entrypoint.sh
+
+USER frappe
+
+COPY --from=builder --chown=frappe:frappe /home/frappe/frappe-bench /home/frappe/frappe-bench
+
+WORKDIR /home/frappe/frappe-bench
+
+VOLUME [ \
+  "/home/frappe/frappe-bench/sites", \
+  "/home/frappe/frappe-bench/sites/assets", \
+  "/home/frappe/frappe-bench/logs" \
+]
+
+CMD [ \
+  "/home/frappe/frappe-bench/env/bin/gunicorn", \
+  "--chdir=/home/frappe/frappe-bench/sites", \
+  "--bind=0.0.0.0:8000", \
+  "--threads=4", \
+  "--workers=2", \
+  "--worker-class=gthread", \
+  "--worker-tmp-dir=/dev/shm", \
+  "--timeout=120", \
+  "--preload", \
+  "frappe.app:application" \
+]

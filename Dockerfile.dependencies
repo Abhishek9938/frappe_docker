@@ -1,0 +1,116 @@
+# Dockerfile.dependencies - Only for system and Python dependencies
+ARG PYTHON_VERSION=3.11.6
+ARG DEBIAN_BASE=bookworm
+FROM python:${PYTHON_VERSION}-slim-${DEBIAN_BASE} AS dependencies
+
+# Copy template files
+COPY resources/nginx-template.conf /templates/nginx/frappe.conf.template
+COPY resources/nginx-entrypoint.sh /usr/local/bin/nginx-entrypoint.sh
+
+ARG WKHTMLTOPDF_VERSION=0.12.6.1-3
+ARG WKHTMLTOPDF_DISTRO=bookworm
+ARG NODE_VERSION=20.19.2
+ENV NVM_DIR=/home/frappe/.nvm
+ENV PATH=${NVM_DIR}/versions/node/v${NODE_VERSION}/bin/:${PATH}
+
+# Create user and install system dependencies
+RUN useradd -ms /bin/bash frappe \
+    && apt-get update \
+    && apt-get install --no-install-recommends -y \
+    # Basic tools
+    curl \
+    git \
+    vim \
+    nginx \
+    gettext-base \
+    file \
+    # Build dependencies
+    wget \
+    gcc \
+    build-essential \
+    pkg-config \
+    # weasyprint dependencies
+    libpango-1.0-0 \
+    libharfbuzz0b \
+    libpangoft2-1.0-0 \
+    libpangocairo-1.0-0 \
+    # Image processing dependencies
+    libcairo2-dev \
+    libpango1.0-dev \
+    libjpeg-dev \
+    libgif-dev \
+    librsvg2-dev \
+    libtiff5-dev \
+    libwebp-dev \
+    liblcms2-dev \
+    # Database clients and dependencies
+    mariadb-client \
+    libmariadb-dev \
+    postgresql-client \
+    libpq-dev \
+    # Other dependencies
+    libffi-dev \
+    libldap2-dev \
+    libsasl2-dev \
+    libbz2-dev \
+    tk8.6-dev \
+    # Tools
+    restic \
+    gpg \
+    less \
+    wait-for-it \
+    jq \
+    redis-tools \
+    rlwrap \
+    cron \
+    # NodeJS installation
+    && mkdir -p ${NVM_DIR} \
+    && curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.5/install.sh | bash \
+    && . ${NVM_DIR}/nvm.sh \
+    && nvm install ${NODE_VERSION} \
+    && nvm use v${NODE_VERSION} \
+    && npm install -g yarn \
+    && nvm alias default v${NODE_VERSION} \
+    && rm -rf ${NVM_DIR}/.cache \
+    && echo 'export NVM_DIR="/home/frappe/.nvm"' >>/home/frappe/.bashrc \
+    && echo '[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"  # This loads nvm' >>/home/frappe/.bashrc \
+    && echo '[ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"  # This loads nvm bash_completion' >>/home/frappe/.bashrc \
+    # Install wkhtmltopdf with patched qt
+    && if [ "$(uname -m)" = "aarch64" ]; then export ARCH=arm64; fi \
+    && if [ "$(uname -m)" = "x86_64" ]; then export ARCH=amd64; fi \
+    && downloaded_file=wkhtmltox_${WKHTMLTOPDF_VERSION}.${WKHTMLTOPDF_DISTRO}_${ARCH}.deb \
+    && curl -sLO https://github.com/wkhtmltopdf/packaging/releases/download/$WKHTMLTOPDF_VERSION/$downloaded_file \
+    && apt-get install -y ./$downloaded_file \
+    && rm $downloaded_file \
+    # Install frappe-bench
+    && pip3 install frappe-bench \
+    # Configure nginx
+    && sed -i '/user www-data/d' /etc/nginx/nginx.conf \
+    && ln -sf /dev/stdout /var/log/nginx/access.log && ln -sf /dev/stderr /var/log/nginx/error.log \
+    && touch /run/nginx.pid \
+    && chown -R frappe:frappe /etc/nginx/conf.d \
+    && chown -R frappe:frappe /etc/nginx/nginx.conf \
+    && chown -R frappe:frappe /var/log/nginx \
+    && chown -R frappe:frappe /var/lib/nginx \
+    && chown -R frappe:frappe /run/nginx.pid \
+    && chmod 755 /usr/local/bin/nginx-entrypoint.sh \
+    && chmod 644 /templates/nginx/frappe.conf.template \
+    && rm -fr /etc/nginx/sites-enabled/default \
+    # Clean up
+    && rm -rf /var/lib/apt/lists/*
+
+# Pre-install common Python packages that Frappe typically needs
+# This helps cache these heavy dependencies
+USER frappe
+RUN pip3 install --user \
+    wheel \
+    setuptools \
+    Pillow \
+    cryptography \
+    psycopg2-binary \
+    mysqlclient \
+    redis \
+    celery \
+    gunicorn
+
+USER root
