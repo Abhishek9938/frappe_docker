@@ -75,9 +75,9 @@ services:
           fi
         done;
         echo "sites/common_site_config.json found";
-        bench new-site --force --mariadb-user-host-login-scope='%' --admin-password=admin --db-root-username=root --db-root-password=admin --install-app erpnext --set-default uatjutemsart.jutecomm.gov.in;
-        bench --site uatjutemsart.jutecomm.gov.in install-app dev_jute_smart;
-        bench --site uatjutemsart.jutecomm.gov.in migrate
+        bench new-site --force --mariadb-user-host-login-scope='%' --admin-password=admin --db-root-username=root --db-root-password=admin --install-app erpnext --set-default frontend;
+        bench --site frontend install-app dev_jute_smart;
+        bench --site frontend migrate
   db:
     image: mariadb:10.6
     networks:
@@ -124,7 +124,7 @@ services:
       - sites:/home/frappe/frappe-bench/sites
       - logs:/home/frappe/frappe-bench/logs
     ports:
-      - "8080:8080"
+      - "8081:8080"
  
   queue-long:
     image: abhishek610/jutesmart:4.0.0
