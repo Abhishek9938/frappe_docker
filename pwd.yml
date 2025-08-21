@@ -1,6 +1,6 @@
 services:
   backend:
-    image: abhishek610/jutesmart:1.0.0
+    image: abhishek610/jutesmart:4.0.0
     networks:
       - frappe_network
     deploy:
@@ -16,7 +16,7 @@ services:
       MARIADB_ROOT_PASSWORD: admin
  
   configurator:
-    image: abhishek610/jutesmart:1.0.0
+    image: abhishek610/jutesmart:4.0.0
     networks:
       - frappe_network
     deploy:
@@ -45,7 +45,7 @@ services:
       - logs:/home/frappe/frappe-bench/logs
  
   create-site:
-    image: abhishek610/jutesmart:1.0.0
+    image: abhishek610/jutesmart:4.0.0
     networks:
       - frappe_network
     deploy:
@@ -75,9 +75,9 @@ services:
           fi
         done;
         echo "sites/common_site_config.json found";
-        bench new-site --force --mariadb-user-host-login-scope='%' --admin-password=admin --db-root-username=root --db-root-password=admin --install-app erpnext --set-default frontend;
-        bench --site frontend install-app dev_jute_smart;
-        bench --site frontend migrate
+        bench new-site --force --mariadb-user-host-login-scope='%' --admin-password=admin --db-root-username=root --db-root-password=admin --install-app erpnext --set-default uatjutemsart.jutecomm.gov.in;
+        bench --site uatjutemsart.jutecomm.gov.in install-app dev_jute_smart;
+        bench --site uatjutemsart.jutecomm.gov.in migrate
   db:
     image: mariadb:10.6
     networks:
@@ -101,7 +101,7 @@ services:
       - db-data:/var/lib/mysql
  
   frontend:
-    image: abhishek610/jutesmart:1.0.0
+    image: abhishek610/jutesmart:4.0.0
     networks:
       - frappe_network
     depends_on:
@@ -124,10 +124,10 @@ services:
       - sites:/home/frappe/frappe-bench/sites
       - logs:/home/frappe/frappe-bench/logs
     ports:
-      - "5173:8080"
+      - "8080:8080"
  
   queue-long:
-    image: abhishek610/jutesmart:1.0.0
+    image: abhishek610/jutesmart:4.0.0
     networks:
       - frappe_network
     deploy:
@@ -143,7 +143,7 @@ services:
       - logs:/home/frappe/frappe-bench/logs
  
   queue-short:
-    image: abhishek610/jutesmart:1.0.0
+    image: abhishek610/jutesmart:4.0.0
     networks:
       - frappe_network
     deploy:
@@ -177,7 +177,7 @@ services:
         condition: on-failure
  
   scheduler:
-    image: abhishek610/jutesmart:1.0.0
+    image: abhishek610/jutesmart:4.0.0
     networks:
       - frappe_network
     deploy:
@@ -191,7 +191,7 @@ services:
       - logs:/home/frappe/frappe-bench/logs
  
   websocket:
-    image: abhishek610/jutesmart:1.0.0
+    image: abhishek610/jutesmart:4.0.0
     networks:
       - frappe_network
     deploy:
