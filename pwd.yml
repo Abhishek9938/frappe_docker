@@ -1,6 +1,6 @@
 services:
   backend:
-    image: abhishek610/jutesmart:10.0.0  
+    image: abhishek610/jutesmart:13.0.0  
     networks:
       - frappe_network
     deploy:
@@ -16,7 +16,7 @@ services:
       MARIADB_ROOT_PASSWORD: admin
  
   configurator:
-    image: abhishek610/jutesmart:10.0.0  
+    image: abhishek610/jutesmart:13.0.0  
     networks:
       - frappe_network
     deploy:
@@ -45,7 +45,7 @@ services:
       - logs:/home/frappe/frappe-bench/logs
  
   create-site:
-    image: abhishek610/jutesmart:10.0.0  
+    image: abhishek610/jutesmart:13.0.0  
     networks:
       - frappe_network
     deploy:
@@ -101,7 +101,7 @@ services:
       - db-data:/var/lib/mysql
  
   frontend:
-    image: abhishek610/jutesmart:10.0.0  
+    image: abhishek610/jutesmart:13.0.0  
     networks:
       - frappe_network
     depends_on:
@@ -127,7 +127,7 @@ services:
       - "8080:8080"
  
   queue-long:
-    image: abhishek610/jutesmart:10.0.0  
+    image: abhishek610/jutesmart:13.0.0  
     networks:
       - frappe_network
     deploy:
@@ -143,7 +143,7 @@ services:
       - logs:/home/frappe/frappe-bench/logs
  
   queue-short:
-    image: abhishek610/jutesmart:10.0.0  
+    image: abhishek610/jutesmart:13.0.0  
     networks:
       - frappe_network
     deploy:
@@ -177,7 +177,7 @@ services:
         condition: on-failure
  
   scheduler:
-    image: abhishek610/jutesmart:10.0.0  
+    image: abhishek610/jutesmart:13.0.0  
     networks:
       - frappe_network
     deploy:
@@ -191,7 +191,7 @@ services:
       - logs:/home/frappe/frappe-bench/logs
  
   websocket:
-    image: abhishek610/jutesmart:10.0.0  
+    image: abhishek610/jutesmart:13.0.0  
     networks:
       - frappe_network
     deploy:
